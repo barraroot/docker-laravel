@@ -1,0 +1,23 @@
+/node_modules
+/public/hot
+/public/storage
+/public/pdf
+/public/uploads
+/storage/*.key
+/vendor
+/.idea
+/.vagrant
+/.docker/dbdata
+Homestead.json
+Homestead.yaml
+npm-debug.log
+.env
+.env.prod
+.idea
+.phpstorm*
+_ide_helper.php
+*.zip
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

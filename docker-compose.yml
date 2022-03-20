@@ -1,0 +1,91 @@
+version: "3.8"
+
+services:
+  app:
+    build: .docker/app
+    container_name: app
+    entrypoint: dockerize -template ./.docker/app/.env:.env  -wait tcp://db:3306 -timeout 40s ./.docker/app/start.sh
+    environment:
+      - DB_HOST=db
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - .:/var/www
+    depends_on:
+      - db
+      - redis
+    networks:
+      - app-network
+
+  nginx:
+    build: .docker/nginx
+    container_name: nginx
+    restart: always
+    tty: true
+    ports:
+      - "80:80"
+    volumes:
+      - .:/var/www
+    depends_on:
+      - app
+    networks:
+      - app-network
+
+  phpmyadmin:
+    build: .docker/myadmin
+    container_name: phpmyadmin
+    restart: always
+    tty: true
+    ports:
+        - "8090:80"
+    depends_on:
+      - db
+    networks:
+      - app-network
+  db:
+    build: .docker/mysql
+    command: --innodb-use-native-aio=0 --default-authentication-plugin=mysql_native_password
+    container_name: db
+    restart: always
+    tty: true
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./.docker/dbdata:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - app-network
+
+  redis:
+    image:  redis:alpine
+    container_name: redis
+    expose:
+      - 6379
+    networks:
+      - app-network
+
+  # queue
+  queue:
+    build:
+      args:
+        user: lucas
+        uid: 1000
+      context: ./
+      dockerfile: ./.docker/app/Dockerfile
+    restart: always
+    command: "php artisan queue:work"
+    volumes:
+      - ./:/var/www
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
